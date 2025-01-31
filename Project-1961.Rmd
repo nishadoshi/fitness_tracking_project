@@ -1,0 +1,171 @@
+---
+title: "Project-1961"
+author: "Nisha Doshi"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#real world health and fitness tracking data
+
+fitness_data <- read.csv("health_fitness_dataset.csv")
+
+head(fitness_data)
+str(fitness_data)
+summary(fitness_data)
+
+#there are 3000 participants in this data set tracking a years worth of fitness/health data 
+```
+
+
+```{r}
+#check for na 
+colSums(is.na(fitness_data))
+
+#no na variables 
+
+#What health conditions are accounted for in this data set? 
+table(fitness_data$health_condition)
+
+table(fitness_data$smoking_status)
+
+#What activity types are listed 
+unique(fitness_data$activity_type)
+
+#range for fitness level and hydration level 
+summary(fitness_data$hydration_level)
+summary(fitness_data$fitness_level)
+
+```
+```{r}
+#univariate 
+
+## gender distribution
+participant_table <- fitness_data[!duplicated(fitness_data$participant_id), c("participant_id", "gender","age", "weight_kg")]
+barplot(table(participant_table$gender), main="Gender Distribution", col="lightblue")
+
+#age distribution
+hist(participant_table$age, main = "Age Distribution", col = "lightblue")
+
+#weigh distribution
+hist(participant_table$weight_kg, main ="Weight distribution", col = "lightblue")
+
+##daily steps 
+hist(fitness_data$daily_steps, main="Steps Distribution", xlab="Steps", col="lightblue")
+mean(fitness_data$daily_steps)
+boxplot(fitness_data$daily_steps)
+
+#range for intensity level --> majority of logs are medium intensity 
+barplot(table(fitness_data$intensity), main = "Intensity Level", col = "lightblue")
+
+```
+```{r}
+#bivariate 
+plot(fitness_data$daily_steps, fitness_data$calories_burned, main="Steps vs. Calories Burned", xlab="Steps", ylab="Calories")
+cor(fitness_data$daily_steps, fitness_data$calories_burned)
+
+
+
+#fitness level vs smoking status 
+smoking <- fitness_data %>%
+  group_by(smoking_status) %>%
+  summarize(
+    Avg_fitness = mean(fitness_level, na.rm = TRUE, round(2)),
+  )
+
+smoking
+
+#fitness level vs health condition 
+health <- fitness_data %>%
+  group_by(health_condition) %>%
+  summarize(
+    Avg_fitness = mean(fitness_level, na.rm = TRUE, round(2)),
+  )
+health
+
+
+avg_per_person <- fitness_data %>%
+  group_by(participant_id) %>%
+  summarize(
+    Avg_stress = mean(stress_level, round(2)),
+    Avg_hydration = mean(hydration_level, round(2)),
+    Avg_sleep = mean(hours_sleep, round(2)),
+    Avg_fitness_lvl = mean(fitness_level, round(2))
+  )
+
+```
+
+```{r}
+#avg calories burned from each activity type 
+library(dplyr)
+
+activity_summary <- fitness_data %>%
+  group_by(activity_type) %>%
+  summarize(
+    Avg_Calories = mean(calories_burned, na.rm = TRUE, round(2)),
+  )
+
+activity_summary
+
+#avg calories burned from each level of intensity 
+intensity_summary <- fitness_data %>%
+  group_by(intensity) %>%
+  summarise(
+    Avg_calories = mean(calories_burned, round(2))
+  )
+
+intensity_summary
+```
+```{r}
+ggplot(avg_per_person, aes(x = factor(Avg_hydration), y = Avg_fitness_lvl)) +
+  stat_summary( geom = "bar", fill = "lightblue", color = "black") +
+  theme_minimal() 
+ 
+ggplot(avg_per_person, aes(x = factor(Avg_sleep), y = Avg_fitness_lvl)) +
+  stat_summary( geom = "bar", fill = "lightblue", color = "black") +
+  theme_minimal() 
+
+ggplot(avg_per_person, aes(x = factor(Avg_stress), y = Avg_fitness_lvl)) +
+  stat_summary( geom = "bar", fill = "lightblue", color = "black") +
+  theme_minimal() 
+
+
+```
+
+
+```{r}
+ggplot(fitness_data, aes(x = health_condition, y = calories_burned, fill = health_condition)) +
+  geom_boxplot() +
+  labs(title = "Calories Burned Across Health Conditions", x = "Health Condition", y = "Calories") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r}
+ggplot(fitness_data, aes(x = duration_minutes, y = calories_burned)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Calories Burned vs. Activity Duration", x = "Duration (mins)", y = "Calories") +
+  theme_minimal()
+
+```
+
+```{r}
+#correlations for numeric variables 
+
+library(ggplot2)
+library(reshape2)
+corr <- cor(fitness_data[, sapply(fitness_data, is.numeric)], use="complete.obs")
+ggplot(melt(corr), aes(Var1, Var2, fill=value)) +
+  geom_tile() +
+  scale_fill_gradient2(midpoint=0, low="blue", high="red", mid="white") +
+  theme_minimal() + 
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(angle = 0) 
+  )
+
+```
+
